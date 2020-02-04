@@ -4,21 +4,22 @@ import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-fun main() {
+fun coroutineStart() {
     val start = System.currentTimeMillis()
 
     val format = SimpleDateFormat("ss.SSS")
 
-    fun format(): String = format.format(Date())
+    fun timeInMillis(): String = format.format(Date())
     fun threadName(): String = Thread.currentThread().name
+    fun printThreadMessage(msg: String): Unit = println("${timeInMillis()}: $msg running on thread ${threadName()}")
 
     GlobalScope.launch {
         //Creating new Coroutine in the global scope
         delay(2000L)
-        println("${format()}: Two seconds running on thread ${threadName()}")
+        printThreadMessage("Two seconds ")
 
         for (i in 100 downTo 0) { //Every 0.5 seconds scheduler will execute the iteration.
-            println("${format()}: outputs down to $i on thread ${threadName()}")
+            println("${timeInMillis()}: ticks $i on ${threadName()} thread")
             delay(500L)
         }
     }
@@ -26,10 +27,16 @@ fun main() {
     GlobalScope.launch {
         //Creating another coroutine in the global scope
         delay(2000L)
-        println("${format()}: Another two seconds running on thread ${threadName()}")
+        printThreadMessage("Another two seconds ")
     }
 
     GlobalScope.launch {
+
+        val retrievedValue: Deferred<String> = async {
+            delay(15000L)
+            "${timeInMillis()}: Fifteen seconds deferred value on ${threadName()} thread"
+        }
+
         //Creating third coroutine in the global scope as well.
         coroutineScope {
             //Coroutine with scope of outer one.
@@ -37,7 +44,7 @@ fun main() {
             launch {
                 //Inner coroutine one
                 delay(3000L)
-                println("${format()}: Three seconds running on thread ${threadName()}")
+                printThreadMessage("Three seconds ")
 
                 coroutineScope {
                     //Creating another sub-scope
@@ -45,13 +52,14 @@ fun main() {
                     launch {
                         //Coroutine of 2D-scoped coroutine
                         delay(5000L)
-                        println("${format()}: Five seconds running on thread ${threadName()}")
+                        printThreadMessage("Five seconds ")
                     }
                 }
             }
 
             delay(1000L)
-            println("${format()}: One seconds running on thread ${threadName()}")
+            printThreadMessage("Fifteen seconds ${retrievedValue.await()} ")
+            printThreadMessage("One second ")
         }
     }
 
@@ -65,6 +73,8 @@ fun main() {
     val duration = (stop - start) / 1000 //get seconds instead of millis.
 
     //The last statement of the execution on main thread (This message will be printed only after 30 seconds due to blocking main thread).
-    println("${format()}: Coroutine scope is over on thread ${threadName()}. Summary execution time: $duration")
+    println("${timeInMillis()}: Coroutine scope is over on ${threadName()} thread. Summary execution time: $duration")
 
 }
+
+fun main() = coroutineStart()
